@@ -12,13 +12,14 @@ class DetailViewController: UIViewController {
     
     @IBOutlet var imageView: UIImageView!
     var selectedImage: String?
+    var pictureTimesShown: Int!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         if let imageToLoad = selectedImage {
             imageView.image = UIImage(named: imageToLoad)
         }
-        title = selectedImage
+        title = "times show: \(pictureTimesShown!)"
         navigationItem.largeTitleDisplayMode = .never
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .action, target: self, action: #selector(shareTapped))
         }

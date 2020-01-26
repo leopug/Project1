@@ -12,6 +12,7 @@ class ViewController: UITableViewController {
 
     var pictures = [String]()
     var picturesLabels = [String]()
+    var pictureTimesShown = [Int]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -19,8 +20,28 @@ class ViewController: UITableViewController {
         title = "Storm Viwer Da Massa"
         navigationController?.navigationBar.prefersLargeTitles = true
         
+        let defaults = UserDefaults.standard
+         if let pictureTimesShownFromUserDefaults = defaults.object(forKey: "timesShown") as? Data {
+             let jsonDecoder = JSONDecoder()
+             do {
+                 pictureTimesShown = try jsonDecoder.decode([Int].self, from: pictureTimesShownFromUserDefaults)
+             } catch {
+                 print("errrroooorr")
+             }
+         }
+        
         performSelector(inBackground: #selector(loadImagesListFromBundle), with: nil)
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .compose, target: self, action: #selector(shareTapped))
+    }
+    
+    func save() {
+        let jsonEncoder = JSONEncoder()
+        if let savedData = try? jsonEncoder.encode(pictureTimesShown) {
+            let defaults = UserDefaults.standard
+            defaults.set(savedData, forKey: "timesShown")
+        } else {
+            print("We failed to save the array")
+        }
     }
     
     @objc func loadImagesListFromBundle() {
@@ -28,21 +49,22 @@ class ViewController: UITableViewController {
         let path = Bundle.main.resourcePath!
         let items = try! fm.contentsOfDirectory(atPath: path)
 
+        let pictureShownEmpty = pictureTimesShown.isEmpty
+
         
         let itemsFilteredSorted = items.filter({$0.hasPrefix("nssl")}).sorted()
         for (index, item) in itemsFilteredSorted.enumerated() {
             picturesLabels.append("Picture \(index+1) of \(itemsFilteredSorted.count)")
             pictures.append(item)
+            if pictureShownEmpty {
+                pictureTimesShown.append(0)
+            }
         }
         
         DispatchQueue.main.async {
           [weak self] in
             self?.tableView.reloadData()
         }
-        
-    }
-
-    func reloadTableAfterAsync(){
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -58,6 +80,9 @@ class ViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if let vc = storyboard?.instantiateViewController(withIdentifier: "Detail") as? DetailViewController {
             vc.selectedImage = pictures[indexPath.row]
+            pictureTimesShown[indexPath.row] += 1
+            vc.pictureTimesShown = pictureTimesShown[indexPath.row]
+            save()
             navigationController?.pushViewController(vc, animated: true)
         }
     }
